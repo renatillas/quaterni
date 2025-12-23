@@ -1,8 +1,8 @@
-name = "q"
+name = "quaterni"
 version = "1.0.0"
 description = "Pure Gleam quaternion math library for 3D rotations"
 licences = ["MIT"]
-repository = { type = "github", user = "renatillas", repo = "q" }
+repository = { type = "github", user = "renatillas", repo = "quaterni" }
 
 [dependencies]
 gleam_stdlib = ">= 0.44.0 and < 2.0.0"

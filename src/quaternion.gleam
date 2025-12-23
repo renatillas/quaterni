@@ -388,3 +388,152 @@ pub fn axis(quat: Quaternion) -> Result(Vec3(Float), Nil) {
     }
   }
 }
+
+/// Create a quaternion that looks from one direction toward a target direction.
+///
+/// Creates a rotation that orients the `forward` direction to point toward the `target` direction,
+/// with the given `up` vector for orientation. Useful for cameras and billboards.
+///
+/// ## Parameters
+/// - `forward`: The current forward direction (usually Vec3(0.0, 0.0, -1.0) for cameras)
+/// - `target`: The direction to look toward  
+/// - `up`: The up vector for orientation (usually Vec3(0.0, 1.0, 0.0))
+///
+/// ## Example
+/// ```gleam
+/// // Make camera look at target from position
+/// let camera_pos = Vec3(10.0, 10.0, 10.0)
+/// let target_pos = Vec3(0.0, 0.0, 0.0)
+/// let direction = vec3f.normalize(vec3f.subtract(target_pos, camera_pos))
+/// let quat = look_at(Vec3(0.0, 0.0, -1.0), direction, Vec3(0.0, 1.0, 0.0))
+/// ```
+pub fn look_at(
+  forward _forward: Vec3(Float),
+  target target: Vec3(Float),
+  up up: Vec3(Float),
+) -> Quaternion {
+  // Normalize vectors
+  let target_norm = vec3f.normalize(target)
+  let up_norm = vec3f.normalize(up)
+
+  // Build orthonormal basis
+  let right = vec3f.normalize(vec3f.cross(up_norm, target_norm))
+  let new_up = vec3f.cross(target_norm, right)
+
+  // Build rotation matrix from basis vectors (column-major)
+  let m00 = right.x
+  let m10 = right.y
+  let m20 = right.z
+  let m01 = new_up.x
+  let m11 = new_up.y
+  let m21 = new_up.z
+  let m02 = 0.0 -. target_norm.x
+  let m12 = 0.0 -. target_norm.y
+  let m22 = 0.0 -. target_norm.z
+
+  // Convert rotation matrix to quaternion using Shepperd's method
+  let trace = m00 +. m11 +. m22
+
+  case trace >. 0.0 {
+    True -> {
+      let s = float.square_root(trace +. 1.0) |> result.unwrap(1.0)
+      let w = s /. 2.0
+      let s = 0.5 /. s
+      Quaternion(
+        x: { m21 -. m12 } *. s,
+        y: { m02 -. m20 } *. s,
+        z: { m10 -. m01 } *. s,
+        w: w,
+      )
+      |> normalize
+    }
+    False -> {
+      case m00 >. m11 && m00 >. m22 {
+        True -> {
+          let s =
+            float.square_root(1.0 +. m00 -. m11 -. m22)
+            |> result.unwrap(1.0)
+          let x = s /. 2.0
+          let s = 0.5 /. s
+          Quaternion(
+            x: x,
+            y: { m01 +. m10 } *. s,
+            z: { m02 +. m20 } *. s,
+            w: { m21 -. m12 } *. s,
+          )
+          |> normalize
+        }
+        False ->
+          case m11 >. m22 {
+            True -> {
+              let s =
+                float.square_root(1.0 +. m11 -. m00 -. m22)
+                |> result.unwrap(1.0)
+              let y = s /. 2.0
+              let s = 0.5 /. s
+              Quaternion(
+                x: { m01 +. m10 } *. s,
+                y: y,
+                z: { m12 +. m21 } *. s,
+                w: { m02 -. m20 } *. s,
+              )
+              |> normalize
+            }
+            False -> {
+              let s =
+                float.square_root(1.0 +. m22 -. m00 -. m11)
+                |> result.unwrap(1.0)
+              let z = s /. 2.0
+              let s = 0.5 /. s
+              Quaternion(
+                x: { m02 +. m20 } *. s,
+                y: { m12 +. m21 } *. s,
+                z: z,
+                w: { m10 -. m01 } *. s,
+              )
+              |> normalize
+            }
+          }
+      }
+    }
+  }
+}
+
+/// Check if two quaternions are approximately equal within a tolerance.
+///
+/// Useful for floating-point comparisons where exact equality is problematic.
+/// Note: Quaternions q and -q represent the same rotation, so this function
+/// checks both orientations.
+///
+/// ## Parameters
+/// - `q1`: First quaternion
+/// - `q2`: Second quaternion
+/// - `epsilon`: Tolerance for comparison (typically 0.0001 to 0.001)
+///
+/// ## Example
+/// ```gleam
+/// let q1 = from_euler(Vec3(0.0, 1.57, 0.0))
+/// let q2 = from_euler(Vec3(0.0, 1.57001, 0.0))
+/// loosely_equals(q1, q2, epsilon: 0.001)  // True
+/// ```
+pub fn loosely_equals(
+  q1: Quaternion,
+  q2: Quaternion,
+  tolerating epsilon: Float,
+) -> Bool {
+  // Check if quaternions are the same
+  let same_orientation =
+    float.absolute_value(q1.x -. q2.x) <. epsilon
+    && float.absolute_value(q1.y -. q2.y) <. epsilon
+    && float.absolute_value(q1.z -. q2.z) <. epsilon
+    && float.absolute_value(q1.w -. q2.w) <. epsilon
+
+  // Check if quaternions are opposite (q and -q represent same rotation)
+  let opposite_orientation =
+    float.absolute_value(q1.x +. q2.x) <. epsilon
+    && float.absolute_value(q1.y +. q2.y) <. epsilon
+    && float.absolute_value(q1.z +. q2.z) <. epsilon
+    && float.absolute_value(q1.w +. q2.w) <. epsilon
+
+  same_orientation || opposite_orientation
+}

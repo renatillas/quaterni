@@ -1,4 +1,4 @@
-# q
+# Quaterni
 
 [![Package Version](https://img.shields.io/hexpm/v/q)](https://hex.pm/packages/q)
 [![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/q/)
@@ -14,29 +14,29 @@ Quaternions are a mathematical representation of rotations in 3D space that:
 ## Installation
 
 ```sh
-gleam add q
+gleam add quaterni
 ```
 
 ## Quick Start
 
 ```gleam
-import q
+import quaternion
 import vec/vec3
 
 // Create quaternion from axis-angle
-let rotation = q.from_axis_angle(vec3.Vec3(0.0, 1.0, 0.0), 1.57)
+let rotation = quaternion.from_axis_angle(vec3.Vec3(0.0, 1.0, 0.0), 1.57)
 
 // Rotate a vector
 let point = vec3.Vec3(1.0, 0.0, 0.0)
-let rotated = q.rotate(rotation, point)
+let rotated = quaternion.rotate(rotation, point)
 
 // Interpolate between rotations
-let halfway = q.spherical_linear_interpolation(from: rot1, to: rot2, t: 0.5)
+let halfway = quaternion.spherical_linear_interpolation(from: rot1, to: rot2, t: 0.5)
 ```
 
 ## Documentation
 
-Full documentation can be found at <https://hexdocs.pm/q>.
+Full documentation can be found at <https://hexdocs.pm/quaterni>.
 
 ## Development
 

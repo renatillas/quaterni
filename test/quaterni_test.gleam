@@ -1,6 +1,6 @@
 import gleam/float
 import gleeunit
-import q
+import quaternion as q
 import vec/vec3
 
 pub fn main() -> Nil {
