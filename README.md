@@ -1,7 +1,7 @@
 # Quaterni
 
-[![Package Version](https://img.shields.io/hexpm/v/q)](https://hex.pm/packages/q)
-[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/q/)
+[![Package Version](https://img.shields.io/hexpm/v/quaterni)](https://hex.pm/packages/quaterni)
+[![Hex Docs](https://img.shields.io/badge/hex-docs-ffaff3)](https://hexdocs.pm/quaterni/)
 
 Pure Gleam quaternion math library for 3D rotations.
 
