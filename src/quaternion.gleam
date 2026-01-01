@@ -408,30 +408,54 @@ pub fn axis(quat: Quaternion) -> Result(Vec3(Float), Nil) {
 /// let quat = look_at(Vec3(0.0, 0.0, -1.0), direction, Vec3(0.0, 1.0, 0.0))
 /// ```
 pub fn look_at(
-  forward _forward: Vec3(Float),
+  forward forward: Vec3(Float),
   target target: Vec3(Float),
   up up: Vec3(Float),
 ) -> Quaternion {
-  // Normalize vectors
-  let target_norm = vec3f.normalize(target)
+  // Compute rotation that aligns `forward` with `target`, preserving `up`
+  // Final = Q_target * inverse(Q_forward)
+  let q_target = look_at_direction(target, up)
+  let q_forward = look_at_direction(forward, up)
+  multiply(q_target, inverse(q_forward))
+}
+
+/// Internal helper: compute quaternion for looking at a direction with given up vector.
+/// Assumes the default forward is -Z.
+fn look_at_direction(direction: Vec3(Float), up: Vec3(Float)) -> Quaternion {
+  let dir_norm = vec3f.normalize(direction)
   let up_norm = vec3f.normalize(up)
 
-  // Build orthonormal basis
-  let right = vec3f.normalize(vec3f.cross(up_norm, target_norm))
-  let new_up = vec3f.cross(target_norm, right)
+  // Build orthonormal basis (right-handed coordinate system)
+  let right = vec3f.normalize(vec3f.cross(dir_norm, up_norm))
+  let new_up = vec3f.cross(right, dir_norm)
 
   // Build rotation matrix from basis vectors (column-major)
+  // Column 0: right, Column 1: up, Column 2: -forward
   let m00 = right.x
   let m10 = right.y
   let m20 = right.z
   let m01 = new_up.x
   let m11 = new_up.y
   let m21 = new_up.z
-  let m02 = 0.0 -. target_norm.x
-  let m12 = 0.0 -. target_norm.y
-  let m22 = 0.0 -. target_norm.z
+  let m02 = 0.0 -. dir_norm.x
+  let m12 = 0.0 -. dir_norm.y
+  let m22 = 0.0 -. dir_norm.z
 
-  // Convert rotation matrix to quaternion using Shepperd's method
+  matrix_to_quaternion(m00, m01, m02, m10, m11, m12, m20, m21, m22)
+}
+
+/// Convert a 3x3 rotation matrix to quaternion using Shepperd's method.
+fn matrix_to_quaternion(
+  m00: Float,
+  m01: Float,
+  m02: Float,
+  m10: Float,
+  m11: Float,
+  m12: Float,
+  m20: Float,
+  m21: Float,
+  m22: Float,
+) -> Quaternion {
   let trace = m00 +. m11 +. m22
 
   case trace >. 0.0 {

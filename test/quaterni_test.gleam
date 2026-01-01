@@ -342,3 +342,137 @@ pub fn axis_x_rotation_test() {
   assert float.loosely_equals(axis.y, 0.0, 0.01)
   assert float.loosely_equals(axis.z, 0.0, 0.01)
 }
+
+// --- Look At ---
+
+pub fn look_at_default_forward_test() {
+  // Looking at -Z with Y up should give identity (camera default)
+  let target = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  assert float.loosely_equals(quat.x, 0.0, 0.01)
+  assert float.loosely_equals(quat.y, 0.0, 0.01)
+  assert float.loosely_equals(quat.z, 0.0, 0.01)
+  assert float.loosely_equals(quat.w, 1.0, 0.01)
+}
+
+pub fn look_at_rotates_forward_to_target_test() {
+  // The quaternion should rotate the default forward (-Z) to the target direction
+  let target = vec3.Vec3(1.0, 0.0, 0.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  // Rotate the default forward direction
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let rotated = q.rotate(quat, forward)
+
+  assert float.loosely_equals(rotated.x, 1.0, 0.01)
+  assert float.loosely_equals(rotated.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated.z, 0.0, 0.01)
+}
+
+pub fn look_at_isometric_test() {
+  // Test isometric camera: looking from (1,1,1) toward origin
+  // Target direction is normalized (-1, -1, -1)
+  let inv_sqrt3 = 0.5774
+  let target = vec3.Vec3(0.0 -. inv_sqrt3, 0.0 -. inv_sqrt3, 0.0 -. inv_sqrt3)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  // Rotate default forward and check it points toward target
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let rotated = q.rotate(quat, forward)
+
+  assert float.loosely_equals(rotated.x, 0.0 -. inv_sqrt3, 0.01)
+  assert float.loosely_equals(rotated.y, 0.0 -. inv_sqrt3, 0.01)
+  assert float.loosely_equals(rotated.z, 0.0 -. inv_sqrt3, 0.01)
+}
+
+pub fn look_at_up_preserved_test() {
+  // When looking horizontally, the up vector should remain up
+  let target = vec3.Vec3(1.0, 0.0, 0.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  // Rotate the default up direction
+  let rotated_up = q.rotate(quat, vec3.Vec3(0.0, 1.0, 0.0))
+
+  // Should still be pointing up (Y axis)
+  assert float.loosely_equals(rotated_up.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated_up.y, 1.0, 0.01)
+  assert float.loosely_equals(rotated_up.z, 0.0, 0.01)
+}
+
+pub fn look_at_right_handed_test() {
+  // Looking at +X should have right vector pointing at +Z
+  let target = vec3.Vec3(1.0, 0.0, 0.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  // Rotate default right (+X) and check orientation
+  let right = vec3.Vec3(1.0, 0.0, 0.0)
+  let rotated_right = q.rotate(quat, right)
+
+  // Should now point at +Z in right-handed system
+  assert float.loosely_equals(rotated_right.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated_right.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated_right.z, 1.0, 0.01)
+}
+
+pub fn look_at_down_test() {
+  // Looking straight down
+  let target = vec3.Vec3(0.0, -1.0, 0.0)
+  let up = vec3.Vec3(0.0, 0.0, -1.0)
+  let quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, up)
+
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let rotated = q.rotate(quat, forward)
+
+  assert float.loosely_equals(rotated.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated.y, -1.0, 0.01)
+  assert float.loosely_equals(rotated.z, 0.0, 0.01)
+}
+
+pub fn look_at_custom_forward_test() {
+  // Object with +X as forward, want to look at +Z
+  let forward = vec3.Vec3(1.0, 0.0, 0.0)
+  let target = vec3.Vec3(0.0, 0.0, 1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  // Rotating the original forward should give target
+  let rotated = q.rotate(quat, forward)
+
+  assert float.loosely_equals(rotated.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated.z, 1.0, 0.01)
+}
+
+pub fn look_at_custom_forward_preserves_up_test() {
+  // Object with +Z as forward, want to look at +X
+  let forward = vec3.Vec3(0.0, 0.0, 1.0)
+  let target = vec3.Vec3(1.0, 0.0, 0.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  // Up should still be up after rotation
+  let rotated_up = q.rotate(quat, vec3.Vec3(0.0, 1.0, 0.0))
+
+  assert float.loosely_equals(rotated_up.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated_up.y, 1.0, 0.01)
+  assert float.loosely_equals(rotated_up.z, 0.0, 0.01)
+}
+
+pub fn look_at_same_direction_test() {
+  // Forward and target are the same - should be identity
+  let forward = vec3.Vec3(1.0, 0.0, 0.0)
+  let target = vec3.Vec3(1.0, 0.0, 0.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  assert float.loosely_equals(quat.x, 0.0, 0.01)
+  assert float.loosely_equals(quat.y, 0.0, 0.01)
+  assert float.loosely_equals(quat.z, 0.0, 0.01)
+  assert float.loosely_equals(quat.w, 1.0, 0.01)
+}

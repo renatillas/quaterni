@@ -1,5 +1,5 @@
 name = "quaterni"
-version = "1.0.0"
+version = "1.0.1"
 description = "Pure Gleam quaternion math library for 3D rotations"
 licences = ["MIT"]
 repository = { type = "github", user = "renatillas", repo = "quaterni" }
