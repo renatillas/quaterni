@@ -476,3 +476,226 @@ pub fn look_at_same_direction_test() {
   assert float.loosely_equals(quat.z, 0.0, 0.01)
   assert float.loosely_equals(quat.w, 1.0, 0.01)
 }
+
+pub fn look_at_backward_180_degrees_test() {
+  // Looking at +Z from default forward -Z (180° rotation)
+  // This is what an FPS camera does when initially facing away
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let target = vec3.Vec3(0.0, 0.0, 1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  // Rotate the default forward direction
+  let rotated = q.rotate(quat, forward)
+
+  // Should now point at +Z
+  assert float.loosely_equals(rotated.x, 0.0, 0.01)
+  assert float.loosely_equals(rotated.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated.z, 1.0, 0.01)
+}
+
+pub fn look_at_near_backward_slightly_right_test() {
+  // Looking slightly to the right of +Z (simulates small yaw from 180° case)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let target = vec3.Vec3(0.1, 0.0, 0.995)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  // Rotate the default forward direction
+  let rotated = q.rotate(quat, forward)
+
+  // Should point approximately at target (normalized)
+  assert float.loosely_equals(rotated.x, 0.1, 0.02)
+  assert float.loosely_equals(rotated.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated.z, 0.995, 0.02)
+}
+
+pub fn look_at_near_backward_slightly_left_test() {
+  // Looking slightly to the left of +Z (simulates small negative yaw)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let target = vec3.Vec3(-0.1, 0.0, 0.995)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+  let quat = q.look_at(forward, target, up)
+
+  // Rotate the default forward direction
+  let rotated = q.rotate(quat, forward)
+
+  // Should point approximately at target (normalized)
+  assert float.loosely_equals(rotated.x, -0.1, 0.02)
+  assert float.loosely_equals(rotated.y, 0.0, 0.01)
+  assert float.loosely_equals(rotated.z, 0.995, 0.02)
+}
+
+// --- FPS Camera Tests ---
+// These tests verify the look_at -> to_euler round trip for FPS camera use cases
+
+import gleam_community/maths
+
+pub fn fps_camera_yaw_left_euler_test() {
+  // FPS camera: looking 30 degrees to the left (yaw = 0.5 radians)
+  // Camera at origin, default forward is -Z
+  let cam_yaw = 0.5
+  let cam_pitch = 0.0
+
+  // Calculate forward direction (same as materials_and_lights example)
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let euler = q.to_euler(quat)
+
+  // The Y component of euler should be approximately cam_yaw
+  // X and Z should be approximately 0
+  assert float.loosely_equals(euler.x, 0.0, 0.01)
+  assert float.loosely_equals(euler.y, cam_yaw, 0.01)
+  assert float.loosely_equals(euler.z, 0.0, 0.01)
+}
+
+pub fn fps_camera_yaw_right_euler_test() {
+  // FPS camera: looking 30 degrees to the right (yaw = -0.5 radians)
+  let cam_yaw = -0.5
+  let cam_pitch = 0.0
+
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let euler = q.to_euler(quat)
+
+  assert float.loosely_equals(euler.x, 0.0, 0.01)
+  assert float.loosely_equals(euler.y, cam_yaw, 0.01)
+  assert float.loosely_equals(euler.z, 0.0, 0.01)
+}
+
+pub fn fps_camera_pitch_up_euler_test() {
+  // FPS camera: looking 30 degrees up (pitch = 0.5 radians)
+  let cam_yaw = 0.0
+  let cam_pitch = 0.5
+
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let euler = q.to_euler(quat)
+
+  // For pitch (looking up/down), the X component should change
+  assert float.loosely_equals(euler.x, cam_pitch, 0.01)
+  assert float.loosely_equals(euler.y, 0.0, 0.01)
+  assert float.loosely_equals(euler.z, 0.0, 0.01)
+}
+
+pub fn fps_camera_combined_pitch_yaw_euler_test() {
+  // FPS camera: looking 30 degrees left and 20 degrees up
+  let cam_yaw = 0.5
+  let cam_pitch = 0.35
+
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let _euler = q.to_euler(quat)
+
+  // Combined rotation - this tests if the euler decomposition is correct
+  // Note: Due to euler angle representation, these might not be exact
+  // but the rotation itself should be correct
+  // Verify by rotating forward with the quaternion
+  let rotated = q.rotate(quat, forward)
+  assert float.loosely_equals(rotated.x, forward_x, 0.01)
+  assert float.loosely_equals(rotated.y, forward_y, 0.01)
+  assert float.loosely_equals(rotated.z, forward_z, 0.01)
+}
+
+pub fn fps_camera_small_yaw_euler_test() {
+  // FPS camera: looking slightly left (yaw = 0.01 radians ≈ 0.57 degrees)
+  // This tests for precision issues with small angles
+  let cam_yaw = 0.01
+  let cam_pitch = 0.0
+
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let euler = q.to_euler(quat)
+
+  // Y component should be approximately cam_yaw (small angle)
+  // X and Z should be approximately 0
+  assert float.loosely_equals(euler.x, 0.0, 0.01)
+  assert float.loosely_equals(euler.y, cam_yaw, 0.01)
+  assert float.loosely_equals(euler.z, 0.0, 0.01)
+}
+
+pub fn fps_camera_very_small_yaw_euler_test() {
+  // FPS camera: looking very slightly left (yaw = 0.001 radians)
+  // This tests for precision issues with very small angles
+  let cam_yaw = 0.001
+  let cam_pitch = 0.0
+
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let forward = vec3.Vec3(0.0, 0.0, -1.0)
+  let up = vec3.Vec3(0.0, 1.0, 0.0)
+
+  let quat = q.look_at(forward, target, up)
+  let _euler = q.to_euler(quat)
+
+  // For very small angles, verify the rotation is still correct
+  // by checking the rotated vector
+  let rotated = q.rotate(quat, forward)
+  assert float.loosely_equals(rotated.x, forward_x, 0.001)
+  assert float.loosely_equals(rotated.y, forward_y, 0.001)
+  assert float.loosely_equals(rotated.z, forward_z, 0.001)
+}
+
+pub fn fps_camera_look_at_vs_from_euler_yaw_test() {
+  // Compare quaternion from look_at with quaternion from from_euler
+  // They should produce the same rotation for pure yaw
+  let cam_yaw = 0.5
+  let cam_pitch = 0.0
+
+  // Method 1: from_euler (this works in the example)
+  let euler_quat = q.from_euler(vec3.Vec3(cam_pitch, cam_yaw, 0.0))
+
+  // Method 2: look_at (this doesn't work in the example)
+  let forward_x = 0.0 -. maths.sin(cam_yaw) *. maths.cos(cam_pitch)
+  let forward_y = maths.sin(cam_pitch)
+  let forward_z = 0.0 -. maths.cos(cam_yaw) *. maths.cos(cam_pitch)
+  let target = vec3.Vec3(forward_x, forward_y, forward_z)
+  let look_at_quat = q.look_at(vec3.Vec3(0.0, 0.0, -1.0), target, vec3.Vec3(0.0, 1.0, 0.0))
+
+  // Both should rotate (0,0,-1) to the same direction
+  let euler_rotated = q.rotate(euler_quat, vec3.Vec3(0.0, 0.0, -1.0))
+  let look_at_rotated = q.rotate(look_at_quat, vec3.Vec3(0.0, 0.0, -1.0))
+
+  // Check if they produce the same rotated vector
+  assert float.loosely_equals(euler_rotated.x, look_at_rotated.x, 0.01)
+  assert float.loosely_equals(euler_rotated.y, look_at_rotated.y, 0.01)
+  assert float.loosely_equals(euler_rotated.z, look_at_rotated.z, 0.01)
+}
